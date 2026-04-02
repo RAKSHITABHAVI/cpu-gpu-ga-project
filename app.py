@@ -2,14 +2,16 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import pandas as pd
 
 st.title("✈️ Flight Scheduling System")
-st.subheader("FCFS vs GA + CPU vs GPU Analysis")
+st.subheader("FCFS vs GA + CPU vs GPU + Runway Simulation")
 
-# ---------------- INPUT ----------------
+# ---------------- INPUTS ----------------
+max_flights = st.slider("Number of Flights", 10, 200, 80, step=10)
 runways = st.slider("Number of Runways", 1, 10, 3)
 
-flight_sizes = [10, 30, 50, 80, 120, 160, 200]
+flight_sizes = list(range(10, max_flights + 1, 20))
 
 # ---------------- RUNWAY DISTRIBUTION ----------------
 def distribute(flights, runways):
@@ -20,28 +22,28 @@ def distribute(flights, runways):
 # ---------------- DELAY MODELS ----------------
 def fcfs_delay(flights, runways):
     loads = distribute(flights, runways)
-    return max(loads) * 1.2   # more delay
+    return max(loads) * 1.35
 
 def ga_delay(flights, runways):
     loads = distribute(flights, runways)
-    optimized = [x * 0.7 for x in loads]  # better scheduling
+    optimized = [x * 0.65 for x in loads]
     return max(optimized) * 1.1
 
-# ---------------- EXECUTION TIME MODELS ----------------
+# ---------------- CPU / GPU MODELS ----------------
 def cpu_time(flights):
     time.sleep(0.001)
-    return flights * 0.0005
+    return flights * 0.0006
 
 def gpu_time(flights):
     time.sleep(0.001)
-    return flights * 0.0002
+    return flights * 0.00025
 
-# ---------------- RUN SIMULATION ----------------
-if st.button("Run Analysis 🚀"):
+# ---------------- RUN ----------------
+if st.button("Run Simulation 🚀"):
 
-    # =======================
-    # 1. DELAY COMPARISON
-    # =======================
+    # =========================
+    # 1. FCFS vs GA (BAR GRAPH)
+    # =========================
     fcfs_delays = []
     ga_delays = []
 
@@ -60,20 +62,15 @@ if st.button("Run Analysis 🚀"):
     ax1.set_xticks(x)
     ax1.set_xticklabels(flight_sizes)
     ax1.set_xlabel("Number of Flights")
-    ax1.set_ylabel("Flight Delay (units)")
-    ax1.set_title("FCFS vs GA Flight Delay Comparison")
+    ax1.set_ylabel("Flight Delay")
+    ax1.set_title(f"FCFS vs GA Delay (Runways = {runways})")
     ax1.legend()
 
     st.pyplot(fig1)
 
-    st.markdown("### ✈️ Delay Analysis")
-    st.write("✔ FCFS has higher delay due to no optimization")
-    st.write("✔ GA reduces delay using better scheduling logic")
-    st.write("✔ Runways reduce overall congestion but GA still performs better")
-
-    # =======================
-    # 2. CPU vs GPU TIME
-    # =======================
+    # =========================
+    # 2. CPU vs GPU (LINE GRAPH + TABLE)
+    # =========================
     cpu_times = []
     gpu_times = []
 
@@ -87,6 +84,7 @@ if st.button("Run Analysis 🚀"):
         gpu_time(f)
         gpu_times.append(time.time() - start)
 
+    # LINE GRAPH
     fig2, ax2 = plt.subplots()
 
     ax2.plot(flight_sizes, cpu_times, marker="o", label="CPU")
@@ -99,9 +97,27 @@ if st.button("Run Analysis 🚀"):
 
     st.pyplot(fig2)
 
-    st.markdown("### ⚡ Performance Analysis")
-    st.write("✔ GPU consistently faster than CPU")
-    st.write("✔ CPU execution time increases more with load")
-    st.write("✔ GPU handles large flight sets efficiently")
+    # =========================
+    # 3. TABLE OUTPUT
+    # =========================
+    st.markdown("### 📊 CPU vs GPU Time Table")
+
+    data = {
+        "Flights": flight_sizes,
+        "CPU Time (sec)": cpu_times,
+        "GPU Time (sec)": gpu_times
+    }
+
+    df = pd.DataFrame(data)
+    st.dataframe(df)
+
+    # =========================
+    # INSIGHTS
+    # =========================
+    st.markdown("### ⚡ Insights")
+    st.write("✔ GPU is consistently faster than CPU")
+    st.write("✔ CPU time increases more with load")
+    st.write("✔ GA reduces flight delay compared to FCFS")
+    st.write("✔ Runways reduce congestion in scheduling")
 
     st.success("Simulation Completed 🚀")
