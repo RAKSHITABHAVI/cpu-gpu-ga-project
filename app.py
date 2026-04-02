@@ -1,11 +1,11 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 import pandas as pd
+import random
 
 st.title("✈️ Flight Scheduling System")
-st.subheader("FCFS vs GA + CPU vs GPU + Runway Simulation")
+st.subheader("FCFS vs GA + CPU vs GPU Simulation with Runways")
 
 # ---------------- INPUTS ----------------
 max_flights = st.slider("Number of Flights", 10, 200, 80, step=10)
@@ -19,30 +19,32 @@ def distribute(flights, runways):
     extra = flights % runways
     return [base + (1 if i < extra else 0) for i in range(runways)]
 
-# ---------------- DELAY MODELS ----------------
+# ---------------- FCFS & GA ----------------
 def fcfs_delay(flights, runways):
     loads = distribute(flights, runways)
-    return max(loads) * 1.35
+    return max(loads) * 1.4
 
 def ga_delay(flights, runways):
     loads = distribute(flights, runways)
-    optimized = [x * 0.65 for x in loads]
+    optimized = [x * 0.6 for x in loads]
     return max(optimized) * 1.1
 
-# ---------------- CPU / GPU MODELS ----------------
+# ---------------- CPU vs GPU (FIXED MODEL) ----------------
 def cpu_time(flights):
-    time.sleep(0.001)
-    return flights * 0.0006
+    base = flights * 0.00003
+    noise = random.uniform(0.0002, 0.0005)
+    return base + noise
 
 def gpu_time(flights):
-    time.sleep(0.001)
-    return flights * 0.00025
+    base = flights * 0.000012
+    noise = random.uniform(0.00005, 0.0002)
+    return base + noise
 
-# ---------------- RUN ----------------
+# ---------------- RUN SIMULATION ----------------
 if st.button("Run Simulation 🚀"):
 
     # =========================
-    # 1. FCFS vs GA (BAR GRAPH)
+    # FCFS vs GA GRAPH
     # =========================
     fcfs_delays = []
     ga_delays = []
@@ -62,27 +64,26 @@ if st.button("Run Simulation 🚀"):
     ax1.set_xticks(x)
     ax1.set_xticklabels(flight_sizes)
     ax1.set_xlabel("Number of Flights")
-    ax1.set_ylabel("Flight Delay")
+    ax1.set_ylabel("Delay")
     ax1.set_title(f"FCFS vs GA Delay (Runways = {runways})")
     ax1.legend()
 
     st.pyplot(fig1)
 
+    st.markdown("### ✈️ Insights")
+    st.write("✔ FCFS creates higher delay due to uneven runway load")
+    st.write("✔ GA balances flights across runways better")
+    st.write("✔ More runways reduce overall delay")
+
     # =========================
-    # 2. CPU vs GPU (LINE GRAPH + TABLE)
+    # CPU vs GPU GRAPH + TABLE
     # =========================
     cpu_times = []
     gpu_times = []
 
     for f in flight_sizes:
-
-        start = time.time()
-        cpu_time(f)
-        cpu_times.append(time.time() - start)
-
-        start = time.time()
-        gpu_time(f)
-        gpu_times.append(time.time() - start)
+        cpu_times.append(cpu_time(f))
+        gpu_times.append(gpu_time(f))
 
     # LINE GRAPH
     fig2, ax2 = plt.subplots()
@@ -92,32 +93,31 @@ if st.button("Run Simulation 🚀"):
 
     ax2.set_xlabel("Number of Flights")
     ax2.set_ylabel("Execution Time (sec)")
-    ax2.set_title("CPU vs GPU Performance Comparison")
+    ax2.set_title("CPU vs GPU Performance")
     ax2.legend()
 
     st.pyplot(fig2)
 
     # =========================
-    # 3. TABLE OUTPUT
+    # TABLE
     # =========================
     st.markdown("### 📊 CPU vs GPU Time Table")
 
-    data = {
+    df = pd.DataFrame({
         "Flights": flight_sizes,
         "CPU Time (sec)": cpu_times,
         "GPU Time (sec)": gpu_times
-    }
+    })
 
-    df = pd.DataFrame(data)
     st.dataframe(df)
 
     # =========================
-    # INSIGHTS
+    # FINAL INSIGHTS
     # =========================
-    st.markdown("### ⚡ Insights")
+    st.markdown("### ⚡ Final Insights")
     st.write("✔ GPU is consistently faster than CPU")
-    st.write("✔ CPU time increases more with load")
-    st.write("✔ GA reduces flight delay compared to FCFS")
-    st.write("✔ Runways reduce congestion in scheduling")
+    st.write("✔ CPU shows higher computation time growth")
+    st.write("✔ GA improves scheduling efficiency over FCFS")
+    st.write("✔ Runways significantly affect delay distribution")
 
     st.success("Simulation Completed 🚀")
